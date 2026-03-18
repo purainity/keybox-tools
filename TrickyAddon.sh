@@ -2,7 +2,7 @@
 
 set -eu
 
-PRIMARY_URL="https://raw.githubusercontent.com/KOWX712/Tricky-Addon-Update-Target-List/main/.extra"
+PRIMARY_URL="https://raw.githubusercontent.com/KOWX712/Tricky-Addon-Update-Target-List/keybox/.extra"
 OUTPUT_PATH="${1:-./keybox.xml}"
 
 if [ "$OUTPUT_PATH" = "-h" ] || [ "$OUTPUT_PATH" = "--help" ]; then
