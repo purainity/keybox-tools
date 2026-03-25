@@ -2,7 +2,7 @@
 
 set -eu
 
-REMOTE_URL="https://raw.githubusercontent.com/MeowDump/MeowDump/main/NullVoid/ShockWave.tar"
+REMOTE_URL="https://raw.githubusercontent.com/MeowDump/MeowDump/main/NullVoid/OptimusPrime"
 OUTPUT_PATH="${1:-./keybox.xml}"
 
 if [ "$OUTPUT_PATH" = "-h" ] || [ "$OUTPUT_PATH" = "--help" ]; then
