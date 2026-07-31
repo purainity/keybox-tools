@@ -3,6 +3,8 @@
 set -eu
 
 PRIMARY_URL="https://raw.githubusercontent.com/KOWX712/Tricky-Addon-Update-Target-List/keybox/.extra"
+TAKR_API_URL="https://keybox.kowx712.cc/api/keyboxes"
+TAKR_SITE_URL="https://keybox.kowx712.cc"
 OUTPUT_PATH="${1:-./keybox.xml}"
 
 if [ "$OUTPUT_PATH" = "-h" ] || [ "$OUTPUT_PATH" = "--help" ]; then
@@ -41,9 +43,10 @@ mkdir -p "$OUTPUT_DIR"
 
 TMP_HEX=$(mktemp)
 TMP_B64=$(mktemp)
+TAKR_TMP=$(mktemp)
 
 cleanup() {
-  rm -f "$TMP_HEX" "$TMP_B64"
+  rm -f "$TMP_HEX" "$TMP_B64" "$TAKR_TMP"
 }
 trap cleanup EXIT INT TERM
 
@@ -53,7 +56,55 @@ if ! download_to_file "$PRIMARY_URL" "$TMP_HEX"; then
 fi
 
 if [ ! -s "$TMP_HEX" ]; then
-  echo "错误: 下载的 keybox 数据为空。" >&2
+  echo "错误: .extra 当前为空（keybox 已被吊销或未更新）。" >&2
+  echo "" >&2
+  echo "正在查询 TAKR (Tricky Addon Keybox Repository)..." >&2
+  echo ""
+
+  if download_to_file "$TAKR_API_URL" "$TAKR_TMP" 2>/dev/null && [ -s "$TAKR_TMP" ]; then
+    all_entries=$(grep -o '"id":[0-9]*[^}]*}' "$TAKR_TMP" || true)
+    if [ -n "$all_entries" ]; then
+      printf '%s\n' "$all_entries" | while IFS= read -r obj; do
+        id=$(printf '%s' "$obj" | sed -n 's/.*"id":\([0-9]*\).*/\1/p')
+        identity=$(printf '%s' "$obj" | sed -n 's/.*"identity":"\([^"]*\)".*/\1/p')
+        status=$(printf '%s' "$obj" | sed -n 's/.*"status":"\([^"]*\)".*/\1/p')
+        root_type=$(printf '%s' "$obj" | sed -n 's/.*"root_type":"\([^"]*\)".*/\1/p')
+        cert_count=$(printf '%s' "$obj" | sed -n 's/.*"cert_count":\([0-9]*\).*/\1/p')
+        key_format=$(printf '%s' "$obj" | sed -n 's/.*"key_format":"\([^"]*\)".*/\1/p')
+        download_count=$(printf '%s' "$obj" | sed -n 's/.*"download_count":\([0-9]*\).*/\1/p')
+        created=$(printf '%s' "$obj" | sed -n 's/.*"created_at":"\([^"]*\)".*/\1/p')
+
+        if [ -z "$id" ]; then
+          continue
+        fi
+
+        if [ "$status" = "valid" ]; then
+          if [ "$root_type" = "hardware" ]; then
+            tag="强认证/硬件密钥"
+          else
+            tag="强认证"
+          fi
+        else
+          tag="已吊销"
+        fi
+
+        local_time=$(date -d "$created" "+%Y年%-m月%-d日 %H:%M:%S" 2>/dev/null || printf '%s' "$created")
+
+        echo "  TAKR $id  $identity" >&2
+        echo "  $tag · ${cert_count}证书 · 密钥算法: $key_format" >&2
+        echo "  上传于: $local_time · 下载次数: $download_count" >&2
+        echo "" >&2
+      done
+    else
+      echo "  (TAKR 仓库无可用 keybox)" >&2
+    fi
+    echo "" >&2
+    echo "TAKR 下载受 Cloudflare 保护，无法通过脚本自动获取。" >&2
+    echo "请通过浏览器访问 $TAKR_SITE_URL 手动下载 keybox。" >&2
+  else
+    echo "无法查询 TAKR API。" >&2
+    echo "请通过浏览器访问 $TAKR_SITE_URL 获取 keybox。" >&2
+  fi
   exit 1
 fi
 

@@ -2,7 +2,7 @@
 
 set -eu
 
-REMOTE_URL="https://raw.githubusercontent.com/MeowDump/MeowDump/main/NullVoid/OptimusPrime"
+REMOTE_URL="https://raw.githubusercontent.com/MeowDump/MeowDump/main/Megatron"
 OUTPUT_PATH="${1:-./keybox.xml}"
 
 if [ "$OUTPUT_PATH" = "-h" ] || [ "$OUTPUT_PATH" = "--help" ]; then
